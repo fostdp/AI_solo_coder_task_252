@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧬 DNA双螺旋配对闯关 - 基因实验室</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <nav class="main-nav">
+            <div class="nav-brand">
+                <span class="logo">🧬</span>
+                <h1>基因实验室</h1>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-tab="game">
+                    <span class="nav-icon">🎮</span>配对游戏
+                </li>
+                <li class="nav-item" data-tab="protein">
+                    <span class="nav-icon">🔬</span>蛋白质合成
+                </li>
+                <li class="nav-item" data-tab="mutation">
+                    <span class="nav-icon">⚠️</span>基因突变
+                </li>
+                <li class="nav-item" data-tab="diseases">
+                    <span class="nav-icon">📚</span>遗传疾病
+                </li>
+                <li class="nav-item" data-tab="ranking">
+                    <span class="nav-icon">🏆</span>排行榜
+                </li>
+            </ul>
+        </nav>
+
+        <header class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">分数</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">生命</span>
+                <span class="stat-value lives" id="lives">❤️❤️❤️</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">关卡</span>
+                <span class="stat-value" id="level">1</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">突变</span>
+                <span class="stat-value" id="mutations">0</span>
+            </div>
+        </header>
+
+        <main class="content-area">
+            <section id="game-tab" class="tab-content active">
+                <div class="game-main">
+                    <div class="helix-section">
+                        <div class="helix-container">
+                            <div class="helix" id="helix"></div>
+                        </div>
+                        <div class="protein-preview" id="protein-preview" style="display: none;">
+                            <h4>🧪 合成的蛋白质</h4>
+                            <div id="protein-sequence" class="protein-sequence"></div>
+                        </div>
+                    </div>
+
+                    <div class="game-controls">
+                        <div class="sequence-panel">
+                            <h3>🎯 目标DNA序列</h3>
+                            <div id="target-sequence" class="sequence-display"></div>
+                            <div class="progress-info">
+                                <span id="progress-text">进度: 0/0</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="base-buttons">
+                            <button class="base-btn adenine" data-base="A">
+                                <span class="base-letter">A</span>
+                                <span class="base-name">腺嘌呤</span>
+                            </button>
+                            <button class="base-btn thymine" data-base="T">
+                                <span class="base-letter">T</span>
+                                <span class="base-name">胸腺嘧啶</span>
+                            </button>
+                            <button class="base-btn cytosine" data-base="C">
+                                <span class="base-letter">C</span>
+                                <span class="base-name">胞嘧啶</span>
+                            </button>
+                            <button class="base-btn guanine" data-base="G">
+                                <span class="base-letter">G</span>
+                                <span class="base-name">鸟嘌呤</span>
+                            </button>
+                        </div>
+
+                        <div class="pairing-rules">
+                            <p>💡 配对规则: <strong>A ↔ T</strong> (2个氢键), <strong>C ↔ G</strong> (3个氢键)</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="protein-tab" class="tab-content">
+                <div class="protein-lab">
+                    <h2>🔬 基因表达模拟实验室</h2>
+                    <p class="lab-description">体验DNA转录为RNA，再翻译为蛋白质的完整过程</p>
+                    
+                    <div class="process-flow">
+                        <div class="process-step">
+                            <h3>1️⃣ DNA模板链</h3>
+                            <div class="dna-input-area">
+                                <textarea id="dna-input" placeholder="输入DNA序列 (仅限A/T/C/G)"></textarea>
+                                <button id="generate-dna" class="btn-primary">生成随机序列</button>
+                                <button id="translate-btn" class="btn-success">开始翻译</button>
+                            </div>
+                        </div>
+
+                        <div class="arrow">↓ 转录 (转录酶)</div>
+
+                        <div class="process-step">
+                            <h3>2️⃣ mRNA信使RNA</h3>
+                            <div id="rna-output" class="sequence-output">-</div>
+                            <p class="step-note">T(胸腺嘧啶)被替换为U(尿嘧啶)</p>
+                        </div>
+
+                        <div class="arrow">↓ 翻译 (核糖体)</div>
+
+                        <div class="process-step">
+                            <h3>3️⃣ 蛋白质多肽链</h3>
+                            <div id="protein-output" class="protein-output">-</div>
+                            <div class="codon-legend">
+                                <h4>密码子对照表</h4>
+                                <div id="codon-table" class="codon-table"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="protein-info">
+                        <div class="info-card">
+                            <h4>📊 翻译统计</h4>
+                            <p>氨基酸数量: <span id="amino-count">0</span></p>
+                            <p>密码子数量: <span id="codon-count">0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="mutation-tab" class="tab-content">
+                <div class="mutation-lab">
+                    <h2>⚠️ 基因突变检测挑战</h2>
+                    <p class="challenge-desc">找出原始序列与突变序列之间的差异，提高你的DNA诊断技能！</p>
+                    
+                    <div class="mutation-challenge">
+                        <div class="challenge-info">
+                            <span class="challenge-type" id="challenge-type">碱基置换</span>
+                            <span class="challenge-hint" id="challenge-hint">找出序列中被替换的碱基</span>
+                        </div>
+
+                        <div class="sequence-comparison">
+                            <div class="sequence-col">
+                                <h4>原始序列 (野生型)</h4>
+                                <div id="original-sequence" class="compare-sequence"></div>
+                            </div>
+                            <div class="sequence-col">
+                                <h4>突变序列 (突变型)</h4>
+                                <div id="mutated-sequence" class="compare-sequence"></div>
+                            </div>
+                        </div>
+
+                        <div class="mutation-answer">
+                            <h4>🔍 你的诊断</h4>
+                            <div class="answer-form">
+                                <label>突变位置 (从1开始):</label>
+                                <input type="number" id="mutation-position" min="1">
+                                <label>突变类型:</label>
+                                <select id="mutation-type-select">
+                                    <option value="substitution">碱基置换</option>
+                                    <option value="deletion">碱基缺失</option>
+                                    <option value="insertion">碱基插入</option>
+                                </select>
+                                <button id="submit-mutation" class="btn-primary">提交答案</button>
+                                <button id="new-challenge" class="btn-secondary">新挑战</button>
+                            </div>
+                        </div>
+
+                        <div id="mutation-result" class="result-feedback"></div>
+
+                        <div class="mutation-stats">
+                            <div class="stat-card">
+                                <span class="stat-number" id="correct-mutations">0</span>
+                                <span class="stat-label">正确诊断</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="total-mutations">0</span>
+                                <span class="stat-label">总尝试</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-number" id="mutation-accuracy">0%</span>
+                                <span class="stat-label">准确率</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="diseases-tab" class="tab-content">
+                <div class="diseases-encyclopedia">
+                    <h2>📚 遗传疾病百科</h2>
+                    <p class="encyclopedia-desc">了解常见遗传疾病的基因背景、突变类型和临床症状</p>
+                    
+                    <div class="disease-filters">
+                        <button class="filter-btn active" data-filter="all">全部疾病</button>
+                        <button class="filter-btn" data-filter="autosomal">常染色体</button>
+                        <button class="filter-btn" data-filter="x-linked">X连锁</button>
+                    </div>
+
+                    <div id="disease-list" class="disease-grid"></div>
+
+                    <div id="disease-detail" class="disease-detail-modal" style="display: none;">
+                        <div class="detail-content">
+                            <button class="close-detail" id="close-detail">×</button>
+                            <h3 id="detail-name"></h3>
+                            <div class="detail-info">
+                                <p><strong>🧬 相关基因:</strong> <span id="detail-gene"></span></p>
+                                <p><strong>📍 染色体:</strong> <span id="detail-chromosome"></span></p>
+                                <p><strong>⚠️ 突变类型:</strong> <span id="detail-mutation"></span></p>
+                                <p><strong>📊 发病率:</strong> <span id="detail-frequency"></span></p>
+                            </div>
+                            <div class="detail-description">
+                                <h4>📋 疾病描述</h4>
+                                <p id="detail-description"></p>
+                            </div>
+                            <div class="detail-symptoms">
+                                <h4>🏥 主要症状</h4>
+                                <ul id="detail-symptoms"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ranking-tab" class="tab-content">
+                <div class="ranking-system">
+                    <h2>🏆 基因组挑战排行榜</h2>
+                    
+                    <div class="ranking-tabs">
+                        <button class="ranking-tab-btn active" data-rank="daily">今日排行</button>
+                        <button class="ranking-tab-btn" data-rank="all">总排行</button>
+                    </div>
+
+                    <div class="daily-challenge-section">
+                        <h3>📅 今日基因组挑战</h3>
+                        <div class="challenge-card">
+                            <div class="challenge-target">
+                                <h4>今日目标序列</h4>
+                                <div id="daily-target" class="target-sequence">-</div>
+                            </div>
+                            <button id="start-daily" class="btn-primary">开始挑战</button>
+                        </div>
+                    </div>
+
+                    <div class="ranking-list">
+                        <div class="ranking-header">
+                            <span class="rank-col">排名</span>
+                            <span class="name-col">玩家</span>
+                            <span class="score-col">分数</span>
+                            <span class="mutation-col">突变数</span>
+                        </div>
+                        <div id="ranking-body" class="ranking-body"></div>
+                    </div>
+
+                    <div class="player-submit">
+                        <h4>📝 提交你的成绩</h4>
+                        <div class="submit-form">
+                            <input type="text" id="player-name-input" placeholder="输入你的名字" maxlength="20">
+                            <button id="submit-score-btn" class="btn-success">提交成绩</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal" id="game-over-modal" style="display: none;">
+        <div class="modal-content">
+            <h2>游戏结束!</h2>
+            <div class="final-stats">
+                <p>最终分数: <span id="final-score">0</span></p>
+                <p>总突变数: <span id="final-mutations">0</span></p>
+                <p>到达关卡: <span id="final-level">1</span></p>
+            </div>
+            <input type="text" id="game-over-name" placeholder="输入你的名字" maxlength="20">
+            <button id="save-game-score" class="btn-success">保存成绩</button>
+            <button id="restart-game" class="btn-primary">重新开始</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "dna-helix-game",
+  "version": "1.0.0",
+  "description": "DNA双螺旋配对闯关游戏",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "keywords": ["dna", "game", "helix"],
+  "author": "",
+  "license": "MIT"
+}

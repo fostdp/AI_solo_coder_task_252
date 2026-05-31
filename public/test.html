@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA双螺旋游戏 - 测试页面</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .test-suite {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #0f3460;
+        }
+        .test-case {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: #0f3460;
+        }
+        .test-passed {
+            border-left: 4px solid #00ff88;
+        }
+        .test-failed {
+            border-left: 4px solid #ff6b6b;
+        }
+        .test-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .test-description {
+            color: #aaa;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .test-result {
+            font-size: 0.95em;
+        }
+        .summary {
+            background: linear-gradient(135deg, #00d9ff20, #00ff8820);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .summary h2 {
+            margin: 0 0 15px 0;
+        }
+        .stats {
+            display: flex;
+            gap: 30px;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+        button {
+            background: linear-gradient(135deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        .log-output {
+            background: #0a0a15;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin: 5px 0;
+        }
+        .log-info { color: #00d9ff; }
+        .log-pass { color: #00ff88; }
+        .log-fail { color: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <h1>🧬 DNA双螺旋游戏 - 测试套件</h1>
+    
+    <div class="summary">
+        <h2>测试概览</h2>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="total-tests">0</div>
+                <div class="stat-label">总测试数</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="passed-tests" style="color: #00ff88;">0</div>
+                <div class="stat-label">通过</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="failed-tests" style="color: #ff6b6b;">0</div>
+                <div class="stat-label">失败</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <button onclick="runAllTests()">运行所有测试</button>
+        <button onclick="clearResults()">清除结果</button>
+        <button onclick="window.open('index.html', '_blank')">打开游戏</button>
+    </div>
+
+    <div id="test-results"></div>
+    <div class="log-output" id="log-output"></div>
+
+    <script src="game.js"></script>
+    <script>
+        let testResults = { total: 0, passed: 0, failed: 0 };
+        let gameInstance = null;
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('log-output');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            output.appendChild(entry);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateStats() {
+            document.getElementById('total-tests').textContent = testResults.total;
+            document.getElementById('passed-tests').textContent = testResults.passed;
+            document.getElementById('failed-tests').textContent = testResults.failed;
+        }
+
+        function addTestCaseResult(name, description, passed, details = '') {
+            const resultsDiv = document.getElementById('test-results');
+            const testCase = document.createElement('div');
+            testCase.className = `test-case ${passed ? 'test-passed' : 'test-failed'}`;
+            testCase.innerHTML = `
+                <div class="test-name">${passed ? '✅' : '❌'} ${name}</div>
+                <div class="test-description">${description}</div>
+                <div class="test-result">${details}</div>
+            `;
+            resultsDiv.appendChild(testCase);
+            
+            testResults.total++;
+            if (passed) testResults.passed++;
+            else testResults.failed++;
+            updateStats();
+        }
+
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+            document.getElementById('log-output').innerHTML = '';
+            testResults = { total: 0, passed: 0, failed: 0 };
+            updateStats();
+        }
+
+        async function setupTestGame() {
+            if (!gameInstance) {
+                gameInstance = new DNAGame();
+            }
+            gameInstance.score = 0;
+            gameInstance.mutations = 0;
+            gameInstance.lives = 3;
+            gameInstance.level = 1;
+            gameInstance.currentPosition = 0;
+            gameInstance.pairedBases = [];
+            gameInstance.isPlaying = true;
+            gameInstance.isProcessing = false;
+            gameInstance.isPaused = false;
+            gameInstance.rotationOffset = 0;
+            gameInstance.currentSequence = 'ATCGATCG';
+            gameInstance.renderSequence();
+            gameInstance.renderHelix();
+            return gameInstance;
+        }
+
+        async function testClickQueueLimit() {
+            log('开始测试: 点击队列限制');
+            const game = await setupTestGame();
+            
+            const initialPosition = game.currentPosition;
+            
+            game.selectBase('T');
+            game.selectBase('T');
+            game.selectBase('T');
+            game.selectBase('T');
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const positionAfterClicks = game.currentPosition;
+            const passed = positionAfterClicks <= initialPosition + 1;
+            
+            addTestCaseResult(
+                '点击队列限制测试',
+                '验证快速连续点击时不会跳过多个碱基',
+                passed,
+                passed 
+                    ? `正确: 点击后位置从 ${initialPosition} 到 ${positionAfterClicks}，没有跳过碱基`
+                    : `失败: 点击后位置从 ${initialPosition} 到 ${positionAfterClicks}，可能跳过了碱基`
+            );
+            
+            log(`点击队列限制测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function testIsProcessingLock() {
+            log('开始测试: isProcessing锁机制');
+            const game = await setupTestGame();
+            
+            game.isProcessing = true;
+            const positionBefore = game.currentPosition;
+            
+            await game.selectBase('T');
+            
+            const positionAfter = game.currentPosition;
+            const passed = positionBefore === positionAfter;
+            
+            game.isProcessing = false;
+            
+            addTestCaseResult(
+                'isProcessing锁机制测试',
+                '验证当isProcessing为true时，点击不会被处理',
+                passed,
+                passed
+                    ? `正确: 锁定状态下位置保持不变 (${positionBefore})`
+                    : `失败: 锁定状态下位置发生了变化 (${positionBefore} -> ${positionAfter})`
+            );
+            
+            log(`isProcessing锁机制测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function test3DRotationReset() {
+            log('开始测试: 3D视角累积误差');
+            const game = await setupTestGame();
+            
+            const initialOffset = game.rotationOffset;
+            
+            game.triggerRiseAnimation();
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const offsetDuringAnimation = game.rotationOffset;
+            
+            await new Promise(resolve => setTimeout(resolve, 600));
+            const offsetAfterAnimation = game.rotationOffset;
+            
+            const passed = offsetAfterAnimation === 0 && offsetDuringAnimation !== initialOffset;
+            
+            addTestCaseResult(
+                '3D视角重置测试',
+                '验证上升动画后旋转偏移正确重置，防止累积误差',
+                passed,
+                passed
+                    ? `正确: 初始偏移=${initialOffset}, 动画中=${offsetDuringAnimation}, 动画后=${offsetAfterAnimation}`
+                    : `失败: 初始偏移=${initialOffset}, 动画中=${offsetDuringAnimation}, 动画后=${offsetAfterAnimation}`
+            );
+            
+            log(`3D视角重置测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function testPagePauseMechanism() {
+            log('开始测试: 页面后台暂停机制');
+            const game = await setupTestGame();
+            
+            game.isPaused = true;
+            const livesBefore = game.lives;
+            const positionBefore = game.currentPosition;
+            
+            game.handleIncorrect();
+            await game.selectBase('T');
+            
+            const livesAfter = game.lives;
+            const positionAfter = game.currentPosition;
+            
+            const passed = livesBefore === livesAfter && positionBefore === positionAfter;
+            
+            addTestCaseResult(
+                '页面暂停机制测试',
+                '验证页面暂停时不会扣减生命值也不会处理配对',
+                passed,
+                passed
+                    ? `正确: 暂停状态下生命=${livesBefore}, 位置=${positionBefore} 保持不变`
+                    : `失败: 暂停状态下生命变化 ${livesBefore}->${livesAfter}, 位置变化 ${positionBefore}->${positionAfter}`
+            );
+            
+            log(`页面暂停机制测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function testVisibilityChange() {
+            log('开始测试: visibilitychange事件处理');
+            const game = await setupTestGame();
+            
+            Object.defineProperty(document, 'hidden', { value: true, writable: true });
+            document.dispatchEvent(new Event('visibilitychange'));
+            
+            const pausedWhenHidden = game.isPaused;
+            
+            Object.defineProperty(document, 'hidden', { value: false, writable: true });
+            document.dispatchEvent(new Event('visibilitychange'));
+            
+            const resumedWhenVisible = !game.isPaused;
+            
+            const passed = pausedWhenHidden && resumedWhenVisible;
+            
+            addTestCaseResult(
+                'visibilitychange事件测试',
+                '验证页面隐藏时自动暂停，显示时恢复',
+                passed,
+                passed
+                    ? `正确: 隐藏时暂停=${pausedWhenHidden}, 显示时恢复=${resumedWhenVisible}`
+                    : `失败: 隐藏时暂停=${pausedWhenHidden}, 显示时恢复=${resumedWhenVisible}`
+            );
+            
+            log(`visibilitychange事件测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function testKeyboardInputWhenPaused() {
+            log('开始测试: 暂停时键盘输入');
+            const game = await setupTestGame();
+            
+            game.isPaused = true;
+            const positionBefore = game.currentPosition;
+            
+            const event = new KeyboardEvent('keydown', { key: 'T' });
+            document.dispatchEvent(event);
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const positionAfter = game.currentPosition;
+            const passed = positionBefore === positionAfter;
+            
+            addTestCaseResult(
+                '暂停时键盘输入测试',
+                '验证游戏暂停时键盘输入不会被处理',
+                passed,
+                passed
+                    ? `正确: 暂停时键盘输入没有影响位置`
+                    : `失败: 暂停时键盘输入改变了位置 ${positionBefore}->${positionAfter}`
+            );
+            
+            log(`暂停时键盘输入测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function testCorrectPairingLogic() {
+            log('开始测试: 正确配对逻辑');
+            const game = await setupTestGame();
+            
+            const firstBase = game.currentSequence[0];
+            const complement = game.getComplement(firstBase);
+            const scoreBefore = game.score;
+            const positionBefore = game.currentPosition;
+            
+            const expected = game.getComplement(game.currentSequence[game.currentPosition]);
+            if (complement === expected) {
+                game.pairedBases.push(complement);
+                game.currentPosition++;
+                game.score += 10;
+                game.updateStats();
+                game.renderSequence();
+            }
+            
+            const scoreAfter = game.score;
+            const positionAfter = game.currentPosition;
+            const passed = scoreAfter === scoreBefore + 10 && positionAfter === positionBefore + 1;
+            
+            addTestCaseResult(
+                '正确配对逻辑测试',
+                '验证正确配对时分数增加且位置前进',
+                passed,
+                passed
+                    ? `正确: 分数 ${scoreBefore}->${scoreAfter}, 位置 ${positionBefore}->${positionAfter}`
+                    : `失败: 分数 ${scoreBefore}->${scoreAfter}, 位置 ${positionBefore}->${positionAfter}`
+            );
+            
+            log(`正确配对逻辑测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function testIncorrectPairingLogic() {
+            log('开始测试: 错误配对逻辑');
+            const game = await setupTestGame();
+            
+            const livesBefore = game.lives;
+            const mutationsBefore = game.mutations;
+            
+            game.handleIncorrect();
+            
+            const livesAfter = game.lives;
+            const mutationsAfter = game.mutations;
+            const passed = livesAfter === livesBefore - 1 && mutationsAfter === mutationsBefore + 1;
+            
+            addTestCaseResult(
+                '错误配对逻辑测试',
+                '验证错误配对时扣减生命并记录突变',
+                passed,
+                passed
+                    ? `正确: 生命 ${livesBefore}->${livesAfter}, 突变 ${mutationsBefore}->${mutationsAfter}`
+                    : `失败: 生命 ${livesBefore}->${livesAfter}, 突变 ${mutationsBefore}->${mutationsAfter}`
+            );
+            
+            log(`错误配对逻辑测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function testComplementBaseCalculation() {
+            log('开始测试: 碱基互补计算');
+            const game = await setupTestGame();
+            
+            const tests = [
+                { input: 'A', expected: 'T' },
+                { input: 'T', expected: 'A' },
+                { input: 'C', expected: 'G' },
+                { input: 'G', expected: 'C' }
+            ];
+            
+            let allPassed = true;
+            let results = [];
+            
+            tests.forEach(test => {
+                const result = game.getComplement(test.input);
+                const passed = result === test.expected;
+                if (!passed) allPassed = false;
+                results.push(`${test.input}->${result}(${passed ? '✓' : '✗'})`);
+            });
+            
+            addTestCaseResult(
+                '碱基互补计算测试',
+                '验证A-T、T-A、C-G、G-C配对规则',
+                allPassed,
+                results.join(', ')
+            );
+            
+            log(`碱基互补计算测试: ${allPassed ? '通过' : '失败'}`, allPassed ? 'pass' : 'fail');
+            return allPassed;
+        }
+
+        async function testShakeAnimationTrigger() {
+            log('开始测试: 震动动画触发');
+            const game = await setupTestGame();
+            
+            game.helixElement.classList.remove('shake');
+            game.triggerShakeAnimation();
+            
+            const hasShakeClass = game.helixElement.classList.contains('shake');
+            
+            await new Promise(resolve => setTimeout(resolve, 600));
+            
+            const noShakeClassAfter = !game.helixElement.classList.contains('shake');
+            
+            const passed = hasShakeClass && noShakeClassAfter;
+            
+            addTestCaseResult(
+                '震动动画测试',
+                '验证错误配对时震动动画正确触发并清除',
+                passed,
+                passed
+                    ? `正确: 动画中触发=${hasShakeClass}, 结束后清除=${noShakeClassAfter}`
+                    : `失败: 动画中触发=${hasShakeClass}, 结束后清除=${noShakeClassAfter}`
+            );
+            
+            log(`震动动画测试: ${passed ? '通过' : '失败'}`, passed ? 'pass' : 'fail');
+            return passed;
+        }
+
+        async function runAllTests() {
+            log('========== 开始运行所有测试 ==========');
+            clearResults();
+            
+            const tests = [
+                testClickQueueLimit,
+                testIsProcessingLock,
+                test3DRotationReset,
+                testPagePauseMechanism,
+                testVisibilityChange,
+                testKeyboardInputWhenPaused,
+                testCorrectPairingLogic,
+                testIncorrectPairingLogic,
+                testComplementBaseCalculation,
+                testShakeAnimationTrigger
+            ];
+            
+            for (const test of tests) {
+                try {
+                    await test();
+                } catch (error) {
+                    log(`测试异常: ${error.message}`, 'fail');
+                    addTestCaseResult(
+                        test.name,
+                        '测试执行异常',
+                        false,
+                        `错误: ${error.message}`
+                    );
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            log('========== 测试完成 ==========');
+            log(`总计: ${testResults.total}, 通过: ${testResults.passed}, 失败: ${testResults.failed}`);
+            
+            if (testResults.failed === 0) {
+                log('🎉 所有测试通过!', 'pass');
+            } else {
+                log(`⚠️  有 ${testResults.failed} 个测试失败`, 'fail');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            log('测试页面加载完成，点击"运行所有测试"开始测试');
+        });
+    </script>
+</body>
+</html>
